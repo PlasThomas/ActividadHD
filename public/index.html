@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cifrado César</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary-color: #3f51b5;
+      --secondary-color: #f5f5f5;
+      --text-color: #333;
+      --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--secondary-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: start;
+      min-height: 100vh;
+    }
+
+    .container {
+      background-color: white;
+      padding: 2rem;
+      margin-top: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h2 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1rem;
+      width: 100%;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #303f9f;
+    }
+
+    .output-box {
+      margin-top: 1.5rem;
+      background: #f0f0f0;
+      padding: 1rem;
+      border-radius: 5px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
+    .alert {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .alert-success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .alert-error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Cifrado César (Desplazamiento 3)</h2>
+
+    <label for="textInput">Texto a cifrar (máx 35 caracteres):</label>
+    <input type="text" id="textInput" maxlength="35" placeholder="Ingresa tu texto..." />
+
+    <button onclick="cifrarCesar()">Cifrar y Guardar</button>
+
+    <div class="output-box">
+      <strong>Texto cifrado:</strong>
+      <div id="output"></div>
+
+      <br><strong>Proceso paso a paso:</strong>
+      <div id="pasoAPaso"></div>
+    </div>
+
+    <div id="alerta"></div>
+  </div>
+
+  <script>
+    async function cifrarCesar() {
+      const texto = document.getElementById('textInput').value.trim();
+      const desplazamiento = 3;
+      let resultado = '';
+      let pasos = '';
+
+      if (texto === '') {
+        mostrarAlerta('Por favor ingresa un texto.', false);
+        return;
+      }
+
+      for (let i = 0; i < texto.length; i++) {
+        let char = texto[i];
+        let cifrado = char;
+
+        if (char.match(/[a-z]/i)) {
+          let code = texto.charCodeAt(i);
+          if (code >= 65 && code <= 90) {
+            cifrado = String.fromCharCode(((code - 65 + desplazamiento) % 26) + 65);
+          } else if (code >= 97 && code <= 122) {
+            cifrado = String.fromCharCode(((code - 97 + desplazamiento) % 26) + 97);
+          }
+          pasos += `${char} → ${cifrado}\n`;
+        } else {
+          pasos += `${char} (sin cambio)\n`;
+        }
+
+        resultado += cifrado;
+      }
+
+      document.getElementById('output').textContent = resultado;
+      document.getElementById('pasoAPaso').textContent = pasos;
+
+      // Enviar al servidor
+      try {
+        const res = await fetch('/guardar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ original: texto, cifrado: resultado })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          mostrarAlerta('Texto guardado exitosamente.', true);
+        } else {
+          mostrarAlerta('Error al guardar en la base de datos.', false);
+        }
+      } catch (error) {
+        console.error(error);
+        mostrarAlerta('Fallo la conexión con el servidor.', false);
+      }
+    }
+
+    function mostrarAlerta(mensaje, exito) {
+      const alerta = document.getElementById('alerta');
+      alerta.textContent = mensaje;
+      alerta.className = `alert ${exito ? 'alert-success' : 'alert-error'}`;
+    }
+  </script>
+</body>
+</html>
